@@ -1,393 +1,662 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Генератор КМ — Расчет ангаров</title>
-    <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --accent: #f59e0b;
-            --accent-hover: #d97706;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            padding: 24px;
-            display: flex;
-            justify-content: center;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1100px;
-            display: grid;
-            grid-template-columns: 380px 1fr;
-            gap: 24px;
-        }
-
-        @media (max-width: 850px) {
-            .container {
-                grid-template-columns: 1fr;
+    <title>Генератор КМ — Автоматическая чертежная система ангаров</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                        },
+                        dark: {
+                            900: '#0b0f17',
+                            800: '#151c2c',
+                            700: '#1f293d',
+                            600: '#2d3b55'
+                        }
+                    }
+                }
             }
         }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap');
 
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f17;
+            color: #f1f5f9;
         }
 
-        h1, h2, h3 {
-            color: var(--text-main);
-            margin-bottom: 16px;
+        .mono {
+            font-family: 'Roboto Mono', monospace;
         }
 
-        h1 {
-            font-size: 1.4rem;
-            border-bottom: 2px solid var(--accent);
-            padding-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        /* Стиль для чертежа */
+        .blueprint-canvas {
+            background-color: #ffffff;
+            transition: all 0.3s ease;
         }
 
-        .form-group {
-            margin-bottom: 16px;
+        .blueprint-mode-dark {
+            background-color: #0d1b2a !important;
         }
 
-        label {
-            display: block;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        select, input {
-            width: 100%;
-            padding: 10px 14px;
-            background: #0f172a;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: #fff;
-            font-size: 0.95rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        select:focus, input:focus {
-            border-color: var(--accent);
-        }
-
-        .grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .gate-item {
-            background: #0f172a;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px dashed var(--border);
-            margin-bottom: 8px;
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent);
-            color: #000;
-            font-weight: 700;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background 0.2s, transform 0.1s;
-        }
-
-        .btn:hover {
-            background: var(--accent-hover);
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            margin-top: 8px;
-        }
-
-        .btn-secondary:hover {
-            background: #334155;
-        }
-
-        .btn-danger {
-            background: #ef4444;
-            color: white;
-            padding: 6px 10px;
-            width: auto;
-        }
-
-        /* Результаты */
-        .summary-box {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .stat-card {
-            background: #0f172a;
-            padding: 16px;
-            border-radius: 8px;
-            border-left: 4px solid var(--accent);
-        }
-
-        .stat-card .value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--accent);
-        }
-
-        .stat-card .label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-            font-size: 0.9rem;
-        }
-
-        th, td {
-            padding: 10px 12px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-
-        th {
-            background: #0f172a;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        tr:hover {
-            background: rgba(255,255,255,0.02);
-        }
-
-        .print-btn {
-            margin-top: 20px;
-            background: #10b981;
-            color: white;
-        }
-
-        .print-btn:hover {
-            background: #059669;
+        /* Печатные стили для формата А3/А4 */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .blueprint-sheet {
+                box-shadow: none !important;
+                border: 2px solid #000 !important;
+                width: 100% !important;
+                margin: 0 !important;
+                page-break-after: always;
+            }
+            @page {
+                size: A3 landscape;
+                margin: 10mm;
+            }
         }
     </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col">
 
-<div class="container">
-    <!-- ЛЕВАЯ ПАНЕЛЬ: ВВОД ПАРАМЕТРОВ -->
-    <div class="card">
-        <h1>📐 Параметры КМ</h1>
-
-        <div class="form-group">
-            <label for="typeSelect">Тип металлоконструкции</label>
-            <select id="typeSelect">
-                <option value="arch-12m">Арочный ангар 12 м</option>
-                <option value="arch-15m">Арочный ангар 15 м</option>
-                <option value="arch-18m">Арочный ангар 18 м</option>
-                <option value="arch-20m">Арочный ангар 20 м</option>
-                <option value="straight-arch-12m">Прямостенный арочный 12 м</option>
-                <option value="straight-gable-12m">Прямостенный двускатный 12 м</option>
-                <option value="straight-gable-20m">Прямостенный двускатный 20 м</option>
-            </select>
-        </div>
-
-        <div class="grid-2">
-            <div class="form-group">
-                <label for="lengthInput">Длина (м)</label>
-                <input type="number" id="lengthInput" value="50" step="1" min="6">
+    <!-- Верхняя панель навигации -->
+    <header class="no-print bg-dark-800 border-b border-dark-600 px-6 py-4 flex flex-wrap justify-between items-center shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="bg-gold-500 text-dark-900 p-2 rounded-lg font-bold text-xl tracking-wider">КМ</div>
+            <div>
+                <h1 class="text-xl font-bold text-white tracking-wide">Генератор КМ Ангаров</h1>
+                <p class="text-xs text-gray-400">Автоматический расчёт спецификаций и генератор графических чертежей</p>
             </div>
-            <div class="form-group">
-                <label for="stepInput">Шаг арок (м)</label>
-                <select id="stepInput">
-                    <option value="3">3.0 м</option>
-                    <option value="4">4.0 м</option>
+        </div>
+        <div class="flex items-center gap-4 mt-3 sm:mt-0">
+            <button onclick="toggleTheme()" class="bg-dark-700 hover:bg-dark-600 border border-dark-600 text-gray-300 text-xs px-3 py-2 rounded-lg flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 73v4M11 3v4m0 10v4m0 4h4m-4-8h4m-4-4h4"></path></svg>
+                <span>Стиль чертежа: <strong id="themeLabel">Белый лист</strong></span>
+            </button>
+            <button onclick="window.print()" class="bg-gold-500 hover:bg-gold-600 text-dark-900 font-bold px-5 py-2 rounded-lg shadow-md transition flex items-center gap-2 text-sm">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                <span>Печать / Экспорт PDF</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Главный контейнер -->
+    <div class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 p-6 max-w-[1920px] mx-auto w-full">
+
+        <!-- ЛЕВАЯ ПАНЕЛЬ: Форма параметров (4 колонки) -->
+        <div class="no-print lg:col-span-4 bg-dark-800 border border-dark-600 rounded-xl p-5 flex flex-col gap-6 shadow-xl h-fit">
+            
+            <div class="border-b border-dark-600 pb-3 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-gold-500 uppercase tracking-wide flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Параметры ангара
+                </h2>
+                <span class="text-xs bg-dark-700 text-gold-400 px-2.5 py-1 rounded-full border border-dark-600 font-mono">Версия 2.0</span>
+            </div>
+
+            <!-- 1. Выбор типа ангара -->
+            <div class="flex flex-col gap-2">
+                <label class="text-xs font-semibold text-gray-400 uppercase">Тип металлоконструкции</label>
+                <select id="typeSelect" onchange="updateGenerator()" class="bg-dark-900 border border-dark-600 text-white rounded-lg p-3 text-sm focus:border-gold-500 focus:outline-none transition">
+                    <option value="arch-12">Арочный ангар 12 м</option>
+                    <option value="arch-15">Арочный ангар 15 м</option>
+                    <option value="arch-18">Арочный ангар 18 м</option>
+                    <option value="arch-20">Арочный ангар 20 м</option>
+                    <option value="straight-arch-12">Прямостенный арочный 12 м</option>
+                    <option value="straight-gable-12">Прямостенный двускатный 12 м</option>
+                    <option value="straight-gable-20">Прямостенный двускатный 20 м</option>
                 </select>
             </div>
-        </div>
 
-        <div class="form-group">
-            <label>Ворота в торцах</label>
-            <div id="gatesList"></div>
-            <button class="btn btn-secondary" onclick="addGate()">+ Добавить ворота</button>
-        </div>
-
-        <button class="btn" onclick="calculateKM()">Сгенерировать КМ</button>
-    </div>
-
-    <!-- ПРАВАЯ ПАНЕЛЬ: СТАТИСТИКА И СПЕЦИФИКАЦИЯ -->
-    <div class="card" id="outputCard">
-        <h2>📊 Спецификация и расчет металлоемкости</h2>
-        
-        <div class="summary-box">
-            <div class="stat-card">
-                <div class="label">Площадь застройки</div>
-                <div class="value" id="statArea">600 м²</div>
-            </div>
-            <div class="stat-card">
-                <div class="label">Количество арок / секций</div>
-                <div class="value" id="statArches">18 шт</div>
-            </div>
-            <div class="stat-card">
-                <div class="label">Ориентировочный вес КМ</div>
-                <div class="value" id="statWeight">0.0 т</div>
-            </div>
-        </div>
-
-        <h3>Детализация элементов каркаса</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Элемент КМ</th>
-                    <th>Профиль / Марка</th>
-                    <th>Кол-во</th>
-                    <th>Ед. изм.</th>
-                </tr>
-            </thead>
-            <tbody id="kmTableBody">
-                <!-- Сюда генерируются данные -->
-            </tbody>
-        </table>
-
-        <button class="btn print-btn" onclick="window.print()">🖨️ Распечатать / Сохранить в PDF</button>
-    </div>
-</div>
-
-<script>
-    // Начальные ворота по умолчанию
-    let gates = [{ width: 4, height: 4 }];
-
-    function renderGates() {
-        const list = document.getElementById('gatesList');
-        list.innerHTML = '';
-        gates.forEach((gate, idx) => {
-            list.innerHTML += `
-                <div class="gate-item">
-                    <input type="number" placeholder="Ширина" value="${gate.width}" onchange="gates[${idx}].width = +this.value" style="width: 45%;">
-                    <span>х</span>
-                    <input type="number" placeholder="Высота" value="${gate.height}" onchange="gates[${idx}].height = +this.value" style="width: 45%;">
-                    <button class="btn btn-danger" onclick="removeGate(${idx})">✕</button>
+            <!-- 2. Длина и шаг -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-gray-400 uppercase">Длина (м)</label>
+                    <input type="number" id="lengthInput" value="50" min="6" max="150" step="1" onchange="updateGenerator()" onkeyup="updateGenerator()" class="bg-dark-900 border border-dark-600 text-white rounded-lg p-3 text-sm focus:border-gold-500 focus:outline-none font-mono font-bold">
                 </div>
+                <div class="flex flex-col gap-2">
+                    <label class="text-xs font-semibold text-gray-400 uppercase">Шаг арок / ферм</label>
+                    <select id="stepSelect" onchange="updateGenerator()" class="bg-dark-900 border border-dark-600 text-white rounded-lg p-3 text-sm focus:border-gold-500 focus:outline-none font-mono">
+                        <option value="3">3.0 м</option>
+                        <option value="4">4.0 м</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 3. Настройки ворот -->
+            <div class="flex flex-col gap-3 border-t border-dark-600 pt-4">
+                <div class="flex justify-between items-center">
+                    <label class="text-xs font-semibold text-gray-400 uppercase">Ворота в торцах</label>
+                    <button onclick="addGate()" class="text-xs bg-gold-500 hover:bg-gold-600 text-dark-900 font-bold px-2.5 py-1 rounded transition">+ Ворота</button>
+                </div>
+                <div id="gatesContainer" class="flex flex-col gap-2 max-h-[160px] overflow-y-auto pr-1">
+                    <!-- Ворота рендерятся динамически JS -->
+                </div>
+            </div>
+
+            <!-- 4. Основные показатели -->
+            <div class="bg-dark-900 rounded-lg p-4 border border-dark-600 flex flex-col gap-3 font-mono text-xs">
+                <div class="flex justify-between text-gray-400 border-b border-dark-700 pb-2">
+                    <span>Площадь застройки:</span>
+                    <strong id="summaryArea" class="text-gold-400 text-sm">600 м²</strong>
+                </div>
+                <div class="flex justify-between text-gray-400 border-b border-dark-700 pb-2">
+                    <span>Кол-во арок/ферм:</span>
+                    <strong id="summaryArches" class="text-white text-sm">17 шт</strong>
+                </div>
+                <div class="flex justify-between text-gray-400">
+                    <span>Расчётный вес металла:</span>
+                    <strong id="summaryWeight" class="text-gold-400 text-sm">14.2 т</strong>
+                </div>
+            </div>
+
+            <button onclick="updateGenerator()" class="w-full bg-gold-500 hover:bg-gold-600 text-dark-900 font-bold py-3 rounded-lg shadow-lg transition uppercase text-sm tracking-wider">
+                Сгенерировать КМ
+            </button>
+        </div>
+
+        <!-- ПРАВАЯ ПАНЕЛЬ: Готовый листок КМ (8 колонок) -->
+        <div class="lg:col-span-8 flex flex-col items-center">
+            
+            <!-- Инженерный лист чертежа КМ -->
+            <div id="blueprintSheet" class="blueprint-sheet bg-white text-black border-4 border-gray-900 rounded-sm p-4 w-full shadow-2xl relative flex flex-col gap-4">
+                
+                <!-- ШАПКА ЧЕРТЕЖА -->
+                <div class="flex justify-between items-center border-b-2 border-black pb-2">
+                    <div>
+                        <h2 id="sheetTitle" class="text-lg font-bold tracking-tight uppercase">АРОЧНЫЙ АНГАР 12х50м — ЧЕРТЕЖИ МАРКИ КМ</h2>
+                        <p class="text-xs text-gray-700 font-mono">Раздел: Конструкции Металлические (КМ) | Проект типовой с адаптацией</p>
+                    </div>
+                    <div class="text-right font-mono text-xs border border-black p-1 bg-gray-50">
+                        <div>Лист: <b>КМ-1</b></div>
+                        <div>Масштаб: <b>1:100 / 1:50</b></div>
+                    </div>
+                </div>
+
+                <!-- ГРАФИЧЕСКАЯ ЧАСТЬ (Canvas чертежи) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- Схема поперечного разреза / фасада -->
+                    <div class="border border-black p-2 flex flex-col items-center">
+                        <span class="text-xs font-bold uppercase self-start mb-1 border-b border-black">Схема поперечного разреза (Фасад)</span>
+                        <canvas id="sectionCanvas" width="500" height="320" class="w-full h-auto border border-gray-300"></canvas>
+                    </div>
+
+                    <!-- Схема плана и продольного фасада -->
+                    <div class="border border-black p-2 flex flex-col items-center">
+                        <span class="text-xs font-bold uppercase self-start mb-1 border-b border-black">Схема расположения элементов (План)</span>
+                        <canvas id="planCanvas" width="500" height="320" class="w-full h-auto border border-gray-300"></canvas>
+                    </div>
+
+                </div>
+
+                <!-- УЗЛЫ СОЕДИНЕНИЯ -->
+                <div class="border border-black p-2">
+                    <span class="text-xs font-bold uppercase border-b border-black inline-block mb-2">Конструктивные узлы сопряжения КМ</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        <div class="border border-gray-400 p-1 flex flex-col items-center bg-gray-50">
+                            <span class="text-[10px] font-bold">Узел 1. Опирание на фундамент</span>
+                            <canvas id="node1Canvas" width="200" height="130" class="w-full h-auto mt-1 border border-gray-300"></canvas>
+                        </div>
+                        <div class="border border-gray-400 p-1 flex flex-col items-center bg-gray-50">
+                            <span class="text-[10px] font-bold">Узел 2. Коньковое соединение</span>
+                            <canvas id="node2Canvas" width="200" height="130" class="w-full h-auto mt-1 border border-gray-300"></canvas>
+                        </div>
+                        <div class="border border-gray-400 p-1 flex flex-col items-center bg-gray-50">
+                            <span class="text-[10px] font-bold">Узел 3. Крепление прогона</span>
+                            <canvas id="node3Canvas" width="200" height="130" class="w-full h-auto mt-1 border border-gray-300"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- СПЕЦИФИКАЦИЯ ЭЛЕМЕНТОВ МЕТАЛЛОКАРКАСА -->
+                <div class="border border-black p-2">
+                    <span class="text-xs font-bold uppercase border-b border-black inline-block mb-2">Спецификация элементов металлоконструкций (КМ)</span>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-[11px] font-mono border-collapse border border-black text-left">
+                            <thead>
+                                <tr class="bg-gray-200 border-b border-black">
+                                    <th class="border border-black p-1">Марка</th>
+                                    <th class="border border-black p-1">Наименование элемента</th>
+                                    <th class="border border-black p-1">Профиль / Сечение</th>
+                                    <th class="border border-black p-1 text-center">Кол-во</th>
+                                    <th class="border border-black p-1 text-center">Ед.</th>
+                                    <th class="border border-black p-1 text-right">Масса ед. кг</th>
+                                    <th class="border border-black p-1 text-right">Общая масса, кг</th>
+                                </tr>
+                            </thead>
+                            <tbody id="specTableBody">
+                                <!-- Заполняется динамически -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ГОСТ ШТАМП КМ -->
+                <div class="mt-2 border-2 border-black grid grid-cols-12 text-[10px] font-mono">
+                    <div class="col-span-7 border-r border-black p-1.5 flex flex-col justify-between">
+                        <div>
+                            <div class="font-bold">ООО "АГРОСТРОЙКОМПЛЕКТ" — ЗАВОД МЕТАЛЛОКОНСТРУКЦИЙ</div>
+                            <div>Чертеж сгенерирован автоматически в системе "КМ-Генератор"</div>
+                        </div>
+                        <div class="mt-2 text-[9px] text-gray-600">Все параметры и узлы соответствуют СП 16.13330.2017 (Стальные конструкции)</div>
+                    </div>
+                    <div class="col-span-5 grid grid-rows-3 border-l border-black">
+                        <div class="border-b border-black p-1 font-bold bg-gray-100 flex justify-between">
+                            <span>Разраб.</span>
+                            <span id="stampedDev">Инженер КМ</span>
+                        </div>
+                        <div class="border-b border-black p-1 flex justify-between">
+                            <span>Проверил</span>
+                            <span>Главный конструктор</span>
+                        </div>
+                        <div class="p-1 flex justify-between font-bold">
+                            <span>Стадия: <b>КМ</b></span>
+                            <span id="stampDate">2026.10.27</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- JS Логика расчета и генерации чертежей -->
+    <script>
+        let gates = [{ width: 4, height: 4 }];
+        let isDarkTheme = false;
+
+        // Данные по профилям и параметрам конструкций
+        const ANGAR_PRESETS = {
+            'arch-12': { name: 'Арочный ангар 12 м', width: 12, height: 6, type: 'arch', purlinRows: 9 },
+            'arch-15': { name: 'Арочный ангар 15 м', width: 15, height: 7.5, type: 'arch', purlinRows: 11 },
+            'arch-18': { name: 'Арочный ангар 18 м', width: 18, height: 9, type: 'arch', purlinRows: 13 },
+            'arch-20': { name: 'Арочный ангар 20 м', width: 20, height: 10, type: 'arch', purlinRows: 15 },
+            'straight-arch-12': { name: 'Прямостенный арочный 12 м', width: 12, height: 6, wallHeight: 3.5, type: 'straight-arch', purlinRows: 10 },
+            'straight-gable-12': { name: 'Прямостенный двускатный 12 м', width: 12, height: 5.5, wallHeight: 4, type: 'straight-gable', purlinRows: 8 },
+            'straight-gable-20': { name: 'Прямостенный двускатный 20 м', width: 20, height: 8, wallHeight: 5, type: 'straight-gable', purlinRows: 14 }
+        };
+
+        // Инициализация при загрузке страницы
+        window.onload = function() {
+            renderGates();
+            updateGenerator();
+        };
+
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.getElementById('themeLabel').innerText = isDarkTheme ? "Синька (Dark)" : "Белый лист";
+            const sheet = document.getElementById('blueprintSheet');
+            if(isDarkTheme) {
+                sheet.classList.add('blueprint-mode-dark', 'text-blue-100');
+            } else {
+                sheet.classList.remove('blueprint-mode-dark', 'text-blue-100');
+            }
+            updateGenerator();
+        }
+
+        function renderGates() {
+            const container = document.getElementById('gatesContainer');
+            container.innerHTML = '';
+            gates.forEach((gate, idx) => {
+                container.innerHTML += `
+                    <div class="flex items-center gap-2 bg-dark-900 p-2 rounded border border-dark-600">
+                        <span class="text-xs text-gray-400 font-mono">#${idx+1}</span>
+                        <input type="number" value="${gate.width}" min="2" max="8" onchange="gates[${idx}].width = +this.value; updateGenerator()" class="w-16 bg-dark-800 border border-dark-600 text-white rounded p-1 text-xs font-mono text-center">
+                        <span class="text-xs text-gray-500">x</span>
+                        <input type="number" value="${gate.height}" min="2" max="6" onchange="gates[${idx}].height = +this.value; updateGenerator()" class="w-16 bg-dark-800 border border-dark-600 text-white rounded p-1 text-xs font-mono text-center">
+                        <span class="text-xs text-gray-500">м</span>
+                        <button onclick="removeGate(${idx})" class="ml-auto text-red-400 hover:text-red-300 text-xs px-2 py-1">✕</button>
+                    </div>
+                `;
+            });
+        }
+
+        function addGate() {
+            if (gates.length >= 4) return;
+            gates.push({ width: 4, height: 4 });
+            renderGates();
+            updateGenerator();
+        }
+
+        function removeGate(idx) {
+            gates.splice(idx, 1);
+            renderGates();
+            updateGenerator();
+        }
+
+        // Основная функция перерасчета и перерисовки
+        function updateGenerator() {
+            const typeKey = document.getElementById('typeSelect').value;
+            const length = parseFloat(document.getElementById('lengthInput').value) || 50;
+            const step = parseFloat(document.getElementById('stepSelect').value) || 3;
+            const preset = ANGAR_PRESETS[typeKey];
+
+            // 1. Расчет характеристик
+            const area = preset.width * length;
+            const archCount = Math.floor(length / step) + 1;
+            const totalPurlinMeters = preset.purlinRows * length;
+
+            // Расчет веса
+            const archWeight = preset.width * 28; // ~кг на одну арку
+            const totalArchWeight = archWeight * archCount;
+            const purlinWeight = totalPurlinMeters * 4.5; // профтруба ~4.5 кг/м
+            const tiesWeight = archCount * 35;
+            const totalWeightKg = totalArchWeight + purlinWeight + tiesWeight + (gates.length * 120);
+
+            // Обновление показателей в левой панели
+            document.getElementById('summaryArea').innerText = area + ' м²';
+            document.getElementById('summaryArches').innerText = archCount + ' шт';
+            document.getElementById('summaryWeight').innerText = (totalWeightKg / 1000).toFixed(1) + ' т';
+            document.getElementById('sheetTitle').innerText = `${preset.name.toUpperCase()} ${preset.width}х${length}м — ЧЕРТЕЖИ КМ`;
+
+            // 2. Генерация чертежей на Canvas
+            drawSectionCanvas(preset, gates);
+            drawPlanCanvas(preset, length, step, gates);
+            drawNodes();
+
+            // 3. Формирование таблицы спецификации
+            renderSpecification(preset, archCount, length, step, totalPurlinMeters, totalWeightKg);
+        }
+
+        // Вспомогательные цвета чертежа
+        function getStrokeColor() {
+            return isDarkTheme ? '#60a5fa' : '#000000';
+        }
+        function getAccentColor() {
+            return isDarkTheme ? '#fbbf24' : '#d97706';
+        }
+
+        // ЧЕРТЕЖ 1: Поперечный разрез / фасад
+        function drawSectionCanvas(preset, gates) {
+            const canvas = document.getElementById('sectionCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const color = getStrokeColor();
+            const accent = getAccentColor();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 1.5;
+
+            const padX = 50;
+            const padBottom = 50;
+            const W = canvas.width - padX * 2;
+            const groundY = canvas.height - padBottom;
+
+            // ЗЕМЛЯ / ФУНДАМЕНТ
+            ctx.beginPath();
+            ctx.moveTo(20, groundY);
+            ctx.lineTo(canvas.width - 20, groundY);
+            ctx.stroke();
+
+            // Штриховка земли
+            ctx.lineWidth = 0.5;
+            for(let x = 20; x < canvas.width - 20; x += 15) {
+                ctx.beginPath();
+                ctx.moveTo(x, groundY);
+                ctx.lineTo(x - 8, groundY + 10);
+                ctx.stroke();
+            }
+            ctx.lineWidth = 1.5;
+
+            // Отрисовка каркаса в зависимости от типа
+            if(preset.type === 'arch') {
+                const radius = W / 2;
+                const centerX = canvas.width / 2;
+                
+                // Внешняя арка
+                ctx.beginPath();
+                ctx.arc(centerX, groundY, radius, Math.PI, 0);
+                ctx.stroke();
+
+                // Внутренняя ферма арки (параллельная дуга)
+                ctx.beginPath();
+                ctx.arc(centerX, groundY, radius - 15, Math.PI, 0);
+                ctx.stroke();
+
+                // Заполнение решетки фермы
+                for(let a = Math.PI; a >= 0; a -= Math.PI / 12) {
+                    const x1 = centerX + radius * Math.cos(a);
+                    const y1 = groundY - radius * Math.sin(a);
+                    const x2 = centerX + (radius - 15) * Math.cos(a);
+                    const y2 = groundY - (radius - 15) * Math.sin(a);
+                    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+                }
+            } else if(preset.type === 'straight-gable') {
+                const wallH = 100;
+                const roofH = 60;
+                
+                // Стойки
+                ctx.strokeRect(padX, groundY - wallH, 8, wallH);
+                ctx.strokeRect(canvas.width - padX - 8, groundY - wallH, 8, wallH);
+
+                // Двускатная ферма
+                ctx.beginPath();
+                ctx.moveTo(padX, groundY - wallH);
+                ctx.lineTo(canvas.width / 2, groundY - wallH - roofH);
+                ctx.lineTo(canvas.width - padX, groundY - wallH);
+                ctx.stroke();
+
+                // Нижний пояс фермы
+                ctx.beginPath();
+                ctx.moveTo(padX, groundY - wallH);
+                ctx.lineTo(canvas.width - padX, groundY - wallH);
+                ctx.stroke();
+            } else {
+                // Прямостенный арочный
+                const wallH = 80;
+                ctx.strokeRect(padX, groundY - wallH, 8, wallH);
+                ctx.strokeRect(canvas.width - padX - 8, groundY - wallH, 8, wallH);
+
+                ctx.beginPath();
+                ctx.arc(canvas.width / 2, groundY - wallH, W / 2, Math.PI, 0);
+                ctx.stroke();
+            }
+
+            // Отрисовка ворот в фасадной проекции (если есть)
+            if(gates.length > 0) {
+                const gW = 80;
+                const gH = 70;
+                const gX = canvas.width / 2 - gW / 2;
+                ctx.strokeStyle = accent;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(gX, groundY - gH, gW, gH);
+                
+                // Пунктир створок
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(gX, groundY - gH);
+                ctx.lineTo(gX + gW / 2, groundY);
+                ctx.lineTo(gX + gW, groundY - gH);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1.5;
+            }
+
+            // РАЗМЕРНЫЕ ЛИНИИ
+            ctx.font = '10px Roboto Mono';
+            ctx.fillStyle = color;
+            
+            // Ширина (Снизу)
+            const dimY = groundY + 25;
+            ctx.beginPath();
+            ctx.moveTo(padX, dimY); ctx.lineTo(canvas.width - padX, dimY);
+            ctx.moveTo(padX, dimY - 5); ctx.lineTo(padX, dimY + 5);
+            ctx.moveTo(canvas.width - padX, dimY - 5); ctx.lineTo(canvas.width - padX, dimY + 5);
+            ctx.stroke();
+            ctx.fillText(`Ширина B = ${preset.width}.00 м`, canvas.width / 2 - 45, dimY + 14);
+        }
+
+        // ЧЕРТЕЖ 2: План расположения элементов
+        function drawPlanCanvas(preset, length, step, gates) {
+            const canvas = document.getElementById('planCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const color = getStrokeColor();
+            const accent = getAccentColor();
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = 1.5;
+
+            const padX = 40;
+            const padY = 40;
+            const W = canvas.width - padX * 2;
+            const H = canvas.height - padY * 2;
+
+            // Контур здания на плане
+            ctx.strokeRect(padX, padY, W, H);
+
+            // Шаги арок
+            const archCount = Math.floor(length / step) + 1;
+            const dx = W / (archCount - 1);
+
+            for(let i = 0; i < archCount; i++) {
+                const x = padX + i * dx;
+                ctx.beginPath();
+                ctx.moveTo(x, padY);
+                ctx.lineTo(x, padY + H);
+                ctx.stroke();
+
+                // Оси (Маркировка)
+                ctx.beginPath();
+                ctx.arc(x, padY - 15, 8, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.font = '8px Roboto Mono';
+                ctx.fillText(i + 1, x - 3, padY - 12);
+            }
+
+            // Связи по шагам (Кресты)
+            ctx.strokeStyle = accent;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            // Связи в первом и последнем пролете
+            ctx.beginPath();
+            ctx.moveTo(padX, padY); ctx.lineTo(padX + dx, padY + H);
+            ctx.moveTo(padX + dx, padY); ctx.lineTo(padX, padY + H);
+            
+            ctx.moveTo(padX + W - dx, padY); ctx.lineTo(padX + W, padY + H);
+            ctx.moveTo(padX + W, padY); ctx.lineTo(padX + W - dx, padY + H);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+
+            // Размерные линии длины (Снизу)
+            const dimY = padY + H + 25;
+            ctx.beginPath();
+            ctx.moveTo(padX, dimY); ctx.lineTo(padX + W, dimY);
+            ctx.moveTo(padX, dimY - 5); ctx.lineTo(padX, dimY + 5);
+            ctx.moveTo(padX + W, dimY - 5); ctx.lineTo(padX + W, dimY + 5);
+            ctx.stroke();
+            ctx.font = '10px Roboto Mono';
+            ctx.fillText(`Длина L = ${length}.00 м (Шаг ${step}м)`, canvas.width / 2 - 60, dimY + 14);
+        }
+
+        // ЧЕРТЕЖ 3: Детальные узлы
+        function drawNodes() {
+            const color = getStrokeColor();
+
+            // Узел 1: Опирание
+            const c1 = document.getElementById('node1Canvas');
+            const ctx1 = c1.getContext('2d');
+            ctx1.clearRect(0, 0, c1.width, c1.height);
+            ctx1.strokeStyle = color; ctx1.fillStyle = color;
+            ctx1.strokeRect(60, 80, 80, 30); // бетонирование
+            ctx1.strokeRect(85, 30, 30, 50); // опорная пластина и база
+            ctx1.beginPath(); ctx1.moveTo(70, 30); ctx1.lineTo(130, 30); ctx1.stroke(); // пластина
+
+            // Узел 2: Коньковый узел
+            const c2 = document.getElementById('node2Canvas');
+            const ctx2 = c2.getContext('2d');
+            ctx2.clearRect(0, 0, c2.width, c2.height);
+            ctx2.strokeStyle = color; ctx2.fillStyle = color;
+            ctx2.beginPath(); ctx2.moveTo(40, 90); ctx2.lineTo(100, 40); ctx2.lineTo(160, 90); ctx2.stroke();
+            ctx2.fillRect(95, 35, 10, 30); // фланцы
+
+            // Узел 3: Прогон
+            const c3 = document.getElementById('node3Canvas');
+            const ctx3 = c3.getContext('2d');
+            ctx3.clearRect(0, 0, c3.width, c3.height);
+            ctx3.strokeStyle = color; ctx3.fillStyle = color;
+            ctx3.strokeRect(70, 40, 60, 40); // труба
+            ctx3.strokeRect(60, 80, 80, 10); // фасонка
+        }
+
+        // Заполнение таблицы спецификации элементов
+        function renderSpecification(preset, archCount, length, step, purlinMeters, totalWeight) {
+            const tbody = document.getElementById('specTableBody');
+            const archPurity = preset.width <= 12 ? 'Труба 80х80х3' : 'Труба 100х100х4';
+            
+            tbody.innerHTML = `
+                <tr>
+                    <td class="border border-black p-1 font-bold">А-1</td>
+                    <td class="border border-black p-1">${preset.type.includes('arch') ? 'Арка несущая (секция)' : 'Ферма кровельная двускатная'}</td>
+                    <td class="border border-black p-1">${archPurity}</td>
+                    <td class="border border-black p-1 text-center font-bold">${archCount}</td>
+                    <td class="border border-black p-1 text-center">компл.</td>
+                    <td class="border border-black p-1 text-right">${(preset.width * 28).toFixed(0)}</td>
+                    <td class="border border-black p-1 text-right font-bold">${(preset.width * 28 * archCount).toFixed(0)}</td>
+                </tr>
+                <tr>
+                    <td class="border border-black p-1 font-bold">ПР-1</td>
+                    <td class="border border-black p-1">Прогоны кровельные и стеновые</td>
+                    <td class="border border-black p-1">Проф. труба 60х40х2</td>
+                    <td class="border border-black p-1 text-center font-bold">${purlinMeters.toFixed(0)}</td>
+                    <td class="border border-black p-1 text-center">м.п.</td>
+                    <td class="border border-black p-1 text-right">4.5</td>
+                    <td class="border border-black p-1 text-right font-bold">${(purlinMeters * 4.5).toFixed(0)}</td>
+                </tr>
+                <tr>
+                    <td class="border border-black p-1 font-bold">СВ-1</td>
+                    <td class="border border-black p-1">Связи вертикальные и торцевые</td>
+                    <td class="border border-black p-1">Круг 16 А1 / Уголок 50х5</td>
+                    <td class="border border-black p-1 text-center font-bold">${archCount * 4}</td>
+                    <td class="border border-black p-1 text-center">шт</td>
+                    <td class="border border-black p-1 text-right">8.5</td>
+                    <td class="border border-black p-1 text-right font-bold">${(archCount * 4 * 8.5).toFixed(0)}</td>
+                </tr>
+                <tr>
+                    <td class="border border-black p-1 font-bold">В-1</td>
+                    <td class="border border-black p-1">Обрамление ворот и фахверк</td>
+                    <td class="border border-black p-1">Швеллер 12П / Труба 100х100</td>
+                    <td class="border border-black p-1 text-center font-bold">${gates.length}</td>
+                    <td class="border border-black p-1 text-center">компл.</td>
+                    <td class="border border-black p-1 text-right">120</td>
+                    <td class="border border-black p-1 text-right font-bold">${gates.length * 120}</td>
+                </tr>
+                <tr class="bg-gray-100 font-bold border-t-2 border-black">
+                    <td colspan="6" class="border border-black p-1 text-right">ИТОГО МЕТАЛЛОКАРКАС КМ:</td>
+                    <td class="border border-black p-1 text-right text-sm">${(totalWeight / 1000).toFixed(2)} т</td>
+                </tr>
             `;
-        });
-    }
-
-    function addGate() {
-        gates.push({ width: 4, height: 4 });
-        renderGates();
-    }
-
-    function removeGate(idx) {
-        gates.splice(idx, 1);
-        renderGates();
-    }
-
-    function calculateKM() {
-        const type = document.getElementById('typeSelect').value;
-        const length = parseFloat(document.getElementById('lengthInput').value) || 0;
-        const step = parseFloat(document.getElementById('stepInput').value) || 3;
-
-        // Вычисляем ширину из выбранного типа
-        let width = 12;
-        if (type.includes('15m')) width = 15;
-        if (type.includes('18m')) width = 18;
-        if (type.includes('20m')) width = 20;
-
-        const area = width * length;
-        const archCount = Math.floor(length / step) + 1;
-        const spansCount = archCount - 1;
-
-        // Расчет прогонов (например, 11 рядов по длине ангара)
-        const purlinRows = width <= 12 ? 9 : (width <= 15 ? 11 : 13);
-        const totalPurlinMeters = purlinRows * length;
-
-        // Расчет фахверков под ворота
-        let gatePostsCount = gates.length * 2; // По 2 стойки на каждые ворота
-
-        // Формирование итоговой таблицы спецификации
-        const tableBody = document.getElementById('kmTableBody');
-        tableBody.innerHTML = `
-            <tr>
-                <td>Рядовые арки / фермы (Ширина ${width}м)</td>
-                <td>ГСП / Проф. труба (по шаблону КМ)</td>
-                <td><b>${archCount}</b></td>
-                <td>компл.</td>
-            </tr>
-            <tr>
-                <td>Прогоны кровельные и стеновые</td>
-                <td>Проф. труба 60х40х2 / 80х40х2</td>
-                <td><b>${totalPurlinMeters.toFixed(1)}</b></td>
-                <td>пог. м</td>
-            </tr>
-            <tr>
-                <td>Связи вертикальные и горизонтальные</td>
-                <td>Круг / Труба / Уголок</td>
-                <td><b>${spansCount * 4}</b></td>
-                <td>шт / связей</td>
-            </tr>
-            <tr>
-                <td>Торцевые фахверковые стойки</td>
-                <td>Швеллер / Труба профильная</td>
-                <td><b>${4 + gatePostsCount}</b></td>
-                <td>шт</td>
-            </tr>
-            <tr>
-                <td>Обрамление ворот (${gates.length} шт)</td>
-                <td>Труба 80х80х3 / 100х100х3</td>
-                <td><b>${gates.length}</b></td>
-                <td>компл. ворот</td>
-            </tr>
-        `;
-
-        // Обновление сводки
-        document.getElementById('statArea').innerText = area + ' м²';
-        document.getElementById('statArches').innerText = archCount + ' шт';
-        document.getElementById('statWeight').innerText = (area * 0.022).toFixed(1) + ' тн'; // Примерный удельный вес
-    }
-
-    // Инициализация при загрузке
-    renderGates();
-    calculateKM();
-</script>
-
+        }
+    </script>
 </body>
 </html>
+```
