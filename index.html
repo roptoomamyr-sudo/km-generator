@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор КМ — Расчет ангаров</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent: #f59e0b;
+            --accent-hover: #d97706;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 850px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        h1, h2, h3 {
+            color: var(--text-main);
+            margin-bottom: 16px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px 14px;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        select:focus, input:focus {
+            border-color: var(--accent);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .gate-item {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px dashed var(--border);
+            margin-bottom: 8px;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: #000;
+            font-weight: 700;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            margin-top: 8px;
+        }
+
+        .btn-secondary:hover {
+            background: #334155;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            padding: 6px 10px;
+            width: auto;
+        }
+
+        /* Результаты */
+        .summary-box {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #0f172a;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .stat-card .value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .stat-card .label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+            font-size: 0.9rem;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #0f172a;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .print-btn {
+            margin-top: 20px;
+            background: #10b981;
+            color: white;
+        }
+
+        .print-btn:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- ЛЕВАЯ ПАНЕЛЬ: ВВОД ПАРАМЕТРОВ -->
+    <div class="card">
+        <h1>📐 Параметры КМ</h1>
+
+        <div class="form-group">
+            <label for="typeSelect">Тип металлоконструкции</label>
+            <select id="typeSelect">
+                <option value="arch-12m">Арочный ангар 12 м</option>
+                <option value="arch-15m">Арочный ангар 15 м</option>
+                <option value="arch-18m">Арочный ангар 18 м</option>
+                <option value="arch-20m">Арочный ангар 20 м</option>
+                <option value="straight-arch-12m">Прямостенный арочный 12 м</option>
+                <option value="straight-gable-12m">Прямостенный двускатный 12 м</option>
+                <option value="straight-gable-20m">Прямостенный двускатный 20 м</option>
+            </select>
+        </div>
+
+        <div class="grid-2">
+            <div class="form-group">
+                <label for="lengthInput">Длина (м)</label>
+                <input type="number" id="lengthInput" value="50" step="1" min="6">
+            </div>
+            <div class="form-group">
+                <label for="stepInput">Шаг арок (м)</label>
+                <select id="stepInput">
+                    <option value="3">3.0 м</option>
+                    <option value="4">4.0 м</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Ворота в торцах</label>
+            <div id="gatesList"></div>
+            <button class="btn btn-secondary" onclick="addGate()">+ Добавить ворота</button>
+        </div>
+
+        <button class="btn" onclick="calculateKM()">Сгенерировать КМ</button>
+    </div>
+
+    <!-- ПРАВАЯ ПАНЕЛЬ: СТАТИСТИКА И СПЕЦИФИКАЦИЯ -->
+    <div class="card" id="outputCard">
+        <h2>📊 Спецификация и расчет металлоемкости</h2>
+        
+        <div class="summary-box">
+            <div class="stat-card">
+                <div class="label">Площадь застройки</div>
+                <div class="value" id="statArea">600 м²</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Количество арок / секций</div>
+                <div class="value" id="statArches">18 шт</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Ориентировочный вес КМ</div>
+                <div class="value" id="statWeight">0.0 т</div>
+            </div>
+        </div>
+
+        <h3>Детализация элементов каркаса</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Элемент КМ</th>
+                    <th>Профиль / Марка</th>
+                    <th>Кол-во</th>
+                    <th>Ед. изм.</th>
+                </tr>
+            </thead>
+            <tbody id="kmTableBody">
+                <!-- Сюда генерируются данные -->
+            </tbody>
+        </table>
+
+        <button class="btn print-btn" onclick="window.print()">🖨️ Распечатать / Сохранить в PDF</button>
+    </div>
+</div>
+
+<script>
+    // Начальные ворота по умолчанию
+    let gates = [{ width: 4, height: 4 }];
+
+    function renderGates() {
+        const list = document.getElementById('gatesList');
+        list.innerHTML = '';
+        gates.forEach((gate, idx) => {
+            list.innerHTML += `
+                <div class="gate-item">
+                    <input type="number" placeholder="Ширина" value="${gate.width}" onchange="gates[${idx}].width = +this.value" style="width: 45%;">
+                    <span>х</span>
+                    <input type="number" placeholder="Высота" value="${gate.height}" onchange="gates[${idx}].height = +this.value" style="width: 45%;">
+                    <button class="btn btn-danger" onclick="removeGate(${idx})">✕</button>
+                </div>
+            `;
+        });
+    }
+
+    function addGate() {
+        gates.push({ width: 4, height: 4 });
+        renderGates();
+    }
+
+    function removeGate(idx) {
+        gates.splice(idx, 1);
+        renderGates();
+    }
+
+    function calculateKM() {
+        const type = document.getElementById('typeSelect').value;
+        const length = parseFloat(document.getElementById('lengthInput').value) || 0;
+        const step = parseFloat(document.getElementById('stepInput').value) || 3;
+
+        // Вычисляем ширину из выбранного типа
+        let width = 12;
+        if (type.includes('15m')) width = 15;
+        if (type.includes('18m')) width = 18;
+        if (type.includes('20m')) width = 20;
+
+        const area = width * length;
+        const archCount = Math.floor(length / step) + 1;
+        const spansCount = archCount - 1;
+
+        // Расчет прогонов (например, 11 рядов по длине ангара)
+        const purlinRows = width <= 12 ? 9 : (width <= 15 ? 11 : 13);
+        const totalPurlinMeters = purlinRows * length;
+
+        // Расчет фахверков под ворота
+        let gatePostsCount = gates.length * 2; // По 2 стойки на каждые ворота
+
+        // Формирование итоговой таблицы спецификации
+        const tableBody = document.getElementById('kmTableBody');
+        tableBody.innerHTML = `
+            <tr>
+                <td>Рядовые арки / фермы (Ширина ${width}м)</td>
+                <td>ГСП / Проф. труба (по шаблону КМ)</td>
+                <td><b>${archCount}</b></td>
+                <td>компл.</td>
+            </tr>
+            <tr>
+                <td>Прогоны кровельные и стеновые</td>
+                <td>Проф. труба 60х40х2 / 80х40х2</td>
+                <td><b>${totalPurlinMeters.toFixed(1)}</b></td>
+                <td>пог. м</td>
+            </tr>
+            <tr>
+                <td>Связи вертикальные и горизонтальные</td>
+                <td>Круг / Труба / Уголок</td>
+                <td><b>${spansCount * 4}</b></td>
+                <td>шт / связей</td>
+            </tr>
+            <tr>
+                <td>Торцевые фахверковые стойки</td>
+                <td>Швеллер / Труба профильная</td>
+                <td><b>${4 + gatePostsCount}</b></td>
+                <td>шт</td>
+            </tr>
+            <tr>
+                <td>Обрамление ворот (${gates.length} шт)</td>
+                <td>Труба 80х80х3 / 100х100х3</td>
+                <td><b>${gates.length}</b></td>
+                <td>компл. ворот</td>
+            </tr>
+        `;
+
+        // Обновление сводки
+        document.getElementById('statArea').innerText = area + ' м²';
+        document.getElementById('statArches').innerText = archCount + ' шт';
+        document.getElementById('statWeight').innerText = (area * 0.022).toFixed(1) + ' тн'; // Примерный удельный вес
+    }
+
+    // Инициализация при загрузке
+    renderGates();
+    calculateKM();
+</script>
+
+</body>
+</html>
